@@ -10,10 +10,13 @@ import xlwt
 import pandas as pd
 import math
 from math import pi
-from geopy.distance import vincenty
 import requests
 import json
 import urllib
+from io import BytesIO
+from PIL import Image
+import imageio
+import os
 
 # 常量
 x_pi = 3.14159265358979324 * 3000.0 / 180.0
@@ -92,7 +95,7 @@ def gcj02_to_wgs84(long, lat):
     magic = math.sin(radlat)
     magic = 1 - ee * magic * magic
     sqrtmagic = math.sqrt(magic)
-    dlong = (dlong - 180.0) / (a / sqrtmagic * math.cos(radlat) * pi)
+    dlong = (dlong * 180.0) / (a / sqrtmagic * math.cos(radlat) * pi)
     dlat = (dlat * 180.0) / ((a * (1 - ee)) / (magic * sqrtmagic) * pi)
 
     wglong = long + dlong
@@ -178,23 +181,15 @@ def get_route(start_gps, end_gps, mode='walk'):
     return int(distance), int(duration), polylines
 
 
-def get_static_map(location, zoom=10, size=(1024, 1024), paths=None):
+def get_map(url):
     """
-    获取静态地图
-    :param location: 中心点坐标
-    :param zoom: 地图缩放级别
-    :param size: 图片宽度×图片高度
-    :param paths: 折线
-    :return: 静态图片
+    获取静态图片
+    :param url: 已经处理好的地图链接
+    :return:
     """
-    zoom = str(zoom)
-    size = str(size[0]) + '*' + str(size[1])
-    url = 'http://restapi.amap.com/v3/staticmap?location={}&zoom={}&size={}&key={}'.format(location, zoom, size, key)
     bytes = urllib.request.urlopen(url)
-    with open('filename' + 'png', 'wb') as f:
-        f.write(bytes.read())
-        f.flush()
-        f.close()
+    image = Image.open(BytesIO(bytes.read()))
+    return image
 
 
 def calculate_axis(point, mid):
@@ -220,3 +215,41 @@ def calculate_axis(point, mid):
         y = 250 - y_distance
 
     return x, y
+
+
+def create_gif(images_name, gif_name, duration=1, delete=False):
+    """
+    生成gif图片
+    :param images_name: 素材
+    :param gif_name: 目标
+    :param duration: 每一帧持续时间
+    :param delete: 是否删除素材
+    :return:
+    """
+    image_list = [name + '.png' for name in images_name]
+    frames = []
+    for name in image_list:
+        frames.append(imageio.imread(name))
+
+    imageio.mimsave(gif_name, frames, 'GIF', duration=duration)
+    if delete:
+        for name in image_list:
+            os.remove(name)
+
+
+def in_area(location, lonmin=120.079824, lonmax=120.092677, latmin=30.295136, latmax=30.31231):
+    """
+    判断是否在范围内
+    :param location:
+    :param lonmin:
+    :param lonmax:
+    :param latmin:
+    :param latmax:
+    :return:
+    """
+    lon = location[0]
+    lat = location[1]
+    if lon >= lonmin and lon <= lonmax and lat >= latmin and lat <= latmax:
+        return True
+    else:
+        return False

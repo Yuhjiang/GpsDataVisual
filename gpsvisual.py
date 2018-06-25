@@ -4,89 +4,171 @@ Module:     gpsvisual
 Summary:    主模块
 Author:     Yuhao Jiang
 Created:    2018/6/18  Ver.1.0
+Updated:    2018/6/25  Ver.1.1 重构功能
 """
 from utils import *
 import matplotlib.pyplot as plt
 import matplotlib.image as img
+from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 import pandas as pd
+import smopy
+from scipy import ndimage
+from datetime import datetime
+import matplotlib.cm as cm
+
+my_key = 'dd6a138c5da8b9a90c80eddbc42662ea'
+
+colors = {
+    'black': '0x000000',
+    'green': '0x008000',
+    'purple': '0x800080',
+    'yellow': '0xFFFF00',
+    'blue': '0x0000FF',
+    'gray': '0x808080',
+    'orange': '0xffa500',
+    'red': '0xFF0000',
+    'white': '0xFFFFFF',
+}
+
+mode_colors = {
+    'walk': 'blue',
+    'bike': 'orange',
+    'car': 'red',
+    'bus': 'gray',
+}
 
 
-class GpsVisual(object):
+def get_static_map(location, zoom=15, size=(500, 500), scale=0, key=my_key, title=None):
     """
-    主要模块，用于可视化GPS位置数据
+    利用地图API获取地图
+    :param location: 中心点位置
+    :param zoom: 缩放比例
+    :param size: 尺寸
+    :param scale: 清晰度，0-高清，1-标清
+    :param key: API的key
+    :param title: 图名，若有图名则保存下来
+    :return:
     """
-    def __init__(self, location, zoom=15, size=(500, 500), key='dd6a138c5da8b9a90c80eddbc42662ea'):
-        self.location = location
-        self.zoom = zoom
-        self.size = size
-        self.key = key
-
-    def static_map(self):
-        """
-        获取一张静态图
-        :return:
-        """
-        location = self.location
-        zoom = str(self.zoom)
-        size = str(self.size[0]) + '*' + str(self.size[1])
-        url = 'http://restapi.amap.com/v3/staticmap?location={}&zoom={}&size={}&key={}'.format(location, zoom, size,
-                                                                                               self.key)
-        image = get_static_map(url)
-        plt.figure(dpi=300)
-        plt.imshow(image)
-        plt.axis('off')
-        plt.show()
-
-    def add_points(self, start_gps, end_gps):
-        """
-        利用高德地图API在地图上显示点
-        :param start_gps: 出发点GPS
-        :param end_gps: 到达点GPS
-        :return:
-        """
-        if len(start_gps) != len(end_gps):
-            raise ValueError('Two parameters must have same shape!')
-
-        start = 'O:' + ';'.join(start_gps)
-        end = 'D:' + ';'.join(end_gps)
-        url = 'http://restapi.amap.com/v3/staticmap?markers=small,0xFF0000,{}|small,0xffa500,{}&key={}'.format(
-            start, end, self.key
-        )
-
-        image = get_static_map(url)
-        plt.figure(dpi=300)
-        plt.imshow(image)
-        plt.axis('off')
-        plt.show()
-
-    def add_paths(self, paths, wegiht=5, color='0x0000FF'):
-        """
-        增加路径
-        :param paths:
-        :return:
-        """
-        paths = ';'.join(paths)
-        zoom = str(self.zoom)
-        size = str(self.size[0]) + '*' + str(self.size[1])
-        url = 'http://restapi.amap.com/v3/staticmap?zoom={}&size={}&paths={},{},1,,:{}&key={}'.format(
-            zoom, size, paths, weight, color, self.key
-        )
-        image = get_static_map(url)
-        plt.figure(dpi=300)
-        plt.imshow(image)
-        plt.axis('off')
-        plt.show()
+    zoom = str(zoom)
+    size = str(size[0]) + '*' + str(size[1])
+    url = 'http://restapi.amap.com/v3/staticmap?location={}&zoom={}&size={}&key={}&scale={}'.format(
+        location, zoom, size, key, scale
+    )
+    image = get_map(url)
+    plt.figure(dpi=300)
+    plt.imshow(image)
+    plt.axis('off')
+    if title:
+        plt.title(title)
+        plt.savefig(fname='title', dpi=300)
+    plt.show()
 
 
-if __name__ == '__main__':
-    location = '120.08605,30.309035'
-    gv = GpsVisual(location, 15, (500, 500))
-    #gv.static_map()
+def add_points(origin, destination, color=('red', 'blue'), marker=('O', 'D'), key=_my_key, title=None):
+    """
+    利用高德API在地图上显示点
+    :param origin: 出发点
+    :param destination: 到达点
+    :param color: 颜色
+    :param marker: 标志
+    :param key: API的key
+    :param title: 图名，若有图名则保存下来
+    :return:
+    """
+    if len(origin) != len(destination):
+        raise ValueError('Origin and destination must have the same shape!')
 
-    s = ['120.086721,30.308425', '120.084541,30.302057']
-    e = ['120.084375,30.308449', '120.083443,30.301998']
+    start = marker[0] + ':' + ';'.join(origin)
+    end = marker[1] + ':' + ';'.join(destination)
+    url = 'http://restapi.amap.com/v3/staticmap?markers=small,{},{}|small,{},{}&key={}'.format(
+        start, colors[color[0]], end, colors[color[1]], key
+    )
 
-    distance, duration, paths = get_route('120.08605,30.309035', '120.086245,30.304851')
-    print(paths)
-    gv.add_paths(paths)
+    image = get_map(url)
+    plt.figure(dpi=300)
+    plt.imshow(image)
+    plt.axis('off')
+    if title:
+        plt.title(title)
+        plt.savefig(fname=title)
+    plt.show()
+
+
+def add_walk_paths(paths, size=(500, 500), weight=5, color='blue', scale=0, key=my_key, title=None):
+    """
+    利用高德地图绘制步行轨迹
+    :param paths: 路径
+    :param size: 尺寸
+    :param weight: 线宽
+    :param color: 颜色
+    :param scale: 清晰度
+    :param key: API的key
+    :param title: 图名，若有图名则保存下来
+    :return:
+    """
+    path = ';'.join(paths)
+    size = str(size[0]) + '*' + str(size[1])
+    url = 'http://restapi.amap.com/v3/staticmap?&size={}&paths={},{},1,,:{}&key={}&scale={}'.format(
+        size, weight, colors[color], paths, key, scale
+    )
+
+    image = get_map(url)
+    plt.figure(dpi=300)
+    plt.imshow(image)
+    plt.axis('off')
+    if title:
+        plt.title(title)
+        plt.savefig(fname=title)
+    plt.show()
+
+
+def add_bus_paths(paths, size=(500, 500), scale=0, key=my_key, title=None):
+    """
+    利用高德API绘制公交车路线图
+    :param paths: 路径, pandas格式
+    :param size: 尺寸
+    :param scale: 清晰度
+    :param key: API的key
+    :param title: 图名
+    :return:
+    """
+    path = list()           # 所有路径
+    temp_path = list()      # 子路径
+    temp_mode = paths['mode'][0]
+    modes = list()
+    modes.append(temp_mode)
+    for i, row in paths.iterrows():
+        gps_point = row['gps']
+        mode = row['mode']
+
+        # 出行方式变化，更新路径
+        if mode != temp_mode:
+            temp_mode = mode
+            path.append(temp_path)
+            modes.append(temp_mode)
+            # 重置子出行路径
+            temp_path = list()
+            temp_path.append(gps_point)
+        else:
+            temp_path.append(gps_point)
+
+    path.append(temp_path)
+
+    str_paths = list()
+    for i in range(len(modes)):
+        mode = modes[i]
+        points = path[i]
+        str_paths.append('{},{},1,,:{}'.format(weight, colors[mode_colors[mode]], ';'.join(points)))
+    str_path = '|'.join(str_paths)
+
+    size = str(size[0]) + '*' + str(size[1])
+    url = 'http://restapi.amap.com/v3/staticmap?size={}&paths={}&key={}'.format(size, str_path, key)
+    image = get_map(url)
+    plt.figure(dpi=300)
+    plt.imshow(image)
+    plt.axis('off')
+    if title:
+        plt.title(title)
+        plt.savefig(fname=title)
+    plt.show()
