@@ -17,6 +17,7 @@ from io import BytesIO
 from PIL import Image
 import imageio
 import os
+import numpy as np
 
 # 常量
 x_pi = 3.14159265358979324 * 3000.0 / 180.0
@@ -148,39 +149,6 @@ def calculate_distance(start_gps, end_gps):
     return int(distance)
 
 
-def get_route(start_gps, end_gps, mode='walk'):
-    """
-    利用高德地图API获取两点位置信息
-    :param start_gps:
-    :param end_gps:
-    :return: 距离，时间，轨迹
-    """
-    url = 'http://restapi.amap.com/v3/direction/walking?origin={}&destination={}&key={}'.format(start_gps, end_gps,
-                                                                                                key)
-    html = requests.get(url, headers=headers)
-    text = json.loads(html.text)
-    info = text['info']
-    if info != 'ok':
-        return False
-
-    route = text['route']
-    paths = route['paths']
-
-    polylines = []
-    distance = 0
-    duration = 0
-    for path in paths:
-        distance = path['distance']
-        duration = path['duration']
-        steps = path['steps']
-        for step in steps:
-            polyline = step['polyline']
-            for pl in polyline.split(';'):
-                polylines.append(pl)
-
-    return int(distance), int(duration), polylines
-
-
 def get_map(url):
     """
     获取静态图片
@@ -253,3 +221,22 @@ def in_area(location, lonmin=120.079824, lonmax=120.092677, latmin=30.295136, la
         return True
     else:
         return False
+
+
+def str2float(data):
+    """
+    字符串转数字
+    :param data: 原始gps数据
+    :return: 返回经纬度
+    """
+    longitude = list()
+    latitude = list()
+    for gps in data:
+        lon, lat = gps.split(',')
+        lon = float(lon)
+        lat = float(lat)
+        lon, lat = gcj02_to_wgs84(lon, lat)
+        longitude.append(lon)
+        latitude.append(lat)
+
+    return np.array(longitude), np.array(latitude)
