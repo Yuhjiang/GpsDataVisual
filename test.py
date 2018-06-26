@@ -101,10 +101,21 @@ def test_create_gif():
     create_gif(images, 'all.gif')
 
 
+def test_add_area_points():
+    data = pd.DataFrame(columns=['longitude', 'latitude', 'count', 'radius'])
+    area = ['120.084648,30.307237', '120.080539,30.308932', '120.084788,30.310813', '120.087749,30.30908']
+    data['longitude'] = [120.086705, 120.086169, 120.081937, 120.084436, 120.082232]
+    data['latitude'] = [30.30844, 30.309612, 30.309334, 30.309408, 30.307778]
+    data['count'] = [20, 16, 20, 10, 5]
+    data['shape'] = [80, 80, 120, 100, 110]
+    add_area_points(data, zoom=15, area=area)
+
+
 if __name__ == '__main__':
-    test_get_static_map()
-    test_walk_route()
+    #test_get_static_map()
+    #test_walk_route()
     test_bus_route()
-    test_add_points()
-    test_heatmap()
-    test_create_gif()
+    #test_add_points()
+    #test_heatmap()
+    #test_create_gif()
+    test_add_area_points()

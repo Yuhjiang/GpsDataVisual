@@ -321,8 +321,95 @@ def add_points_2(origin, destination, zoom, area, title=None):
     plt.show()
 
 
+def add_area_points(data, zoom, area, title=None):
+    longitude = data['longitude'].values
+    latitude = data['latitude'].values
+    count = data['count'].values
+    radius = data['radius'].values
+
+    area_lon, area_lat = str2float(area)
+    Map = smopy.Map((area_lat.min(), area_lon.min(), area_lat.max(), area_lon.max()), z=zoom)
+
+    lon = []
+    lat = []
+    for i in range(len(longitude)):
+        m, n = gcj02_to_wgs84(longitude[i], latitude[i])
+        lon.append(m)
+        lat.append(n)
+
+    lon = np.array(lon)
+    lat = np.array(lat)
+    x, y = Map.to_pixels(lat, lon)
+
+    shape = [pi * r * r / 8 for r in radius]
+
+    ax = Map.show_mpl(figsize=(8, 8))
+    # cm = plt.cm.get_cmap('RdYlBu')
+    ax = plt.scatter(x, y, c=count, s=shape, cmap='Reds', alpha=0.5)
+    plt.colorbar(ax)
+
+    if title:
+        plt.title(title)
+        plt.savefig(fname=title, dpi=300)
+    plt.show()
+
+
 if __name__ == '__main__':
-    s = ['120.086721,30.308425', '120.084541,30.302057']
-    e = ['120.084375,30.308449', '120.083443,30.301998']
-    area = ['120.07912,30.30411', '120.087231,30.297293', '120.092295,30.305333', '120.085429,30.31278']
-    add_points_2(s, e, zoom=15, area=area)
+    area = {
+        '白沙': {
+            'location': '120.086705,30.30844',
+            'radius': '80',
+        },
+        '翠柏': {
+            'location': '120.086169,30.309612',
+            'radius': '80',
+        },
+        '蓝田': {
+            'location': '120.081937,30.309334',
+            'radius': '120',
+        },
+        '丹青': {
+            'location': '120.084436,30.309408',
+            'radius': '100',
+        },
+        '云峰': {
+            'location': '120.082232,30.307778',
+            'radius': '110',
+        },
+    }
+
+    """
+    x = [120.086705, 120.086169, 120.081937, 120.084436, 120.082232]
+    y = [30.30844, 30.309612, 30.309334, 30.309408, 30.307778]
+    area = ['120.084648,30.307237', '120.080539,30.308932', '120.084788,30.310813', '120.087749,30.30908']
+    area_lon, area_lat = str2float(area)
+
+    Map = smopy.Map((area_lat.min(), area_lon.min(), area_lat.max(), area_lon.max()), zoom=15)
+
+    lon = []
+    lat = []
+    for i in range(len(x)):
+        m, n = gcj02_to_wgs84(x[i], y[i])
+        lon.append(m)
+        lat.append(n)
+
+    lon = np.array(lon)
+    lat = np.array(lat)
+    x, y = Map.to_pixels(lat, lon)
+    area = [pi * r * r / 4 for r in [80, 80, 120, 100, 110]]
+    pop = [20, 16, 20, 10, 5]
+
+    ax = Map.show_mpl(figsize=(8, 8))
+    # cm = plt.cm.get_cmap('RdYlBu')
+    ax = plt.scatter(x, y, c=pop, s=area, cmap='Reds', alpha=0.5)
+    plt.colorbar(ax)
+
+    plt.show()
+    """
+    data = pd.DataFrame(columns=['longitude', 'latitude', 'count', 'radius'])
+    area = ['120.084648,30.307237', '120.080539,30.308932', '120.084788,30.310813', '120.087749,30.30908']
+    data['longitude'] = [120.086705, 120.086169, 120.081937, 120.084436, 120.082232]
+    data['latitude'] = [30.30844, 30.309612, 30.309334, 30.309408, 30.307778]
+    data['count'] = [20, 16, 20, 10, 5]
+    data['radius'] = [80, 80, 120, 100, 110]
+    add_area_points(data, zoom=15, area=area)
