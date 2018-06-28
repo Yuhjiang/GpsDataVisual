@@ -7,6 +7,7 @@ Created:    2018/6/16  Ver.1.0
 """
 import re
 import xlwt
+import xlrd
 import pandas as pd
 import math
 from math import pi
@@ -29,14 +30,17 @@ headers = {
 key = 'dd6a138c5da8b9a90c80eddbc42662ea'
 
 
-def csv2excel(csv_path, excel_path):
+def csv2excel(csv_path, excel_path, col=None):
     """
     将csv格式数据保存到excel文件中
     :param csv_path: csv路径
     :param excel_path: excel路径
+    :param col: 指定从第几列开始
     :return:
     """
     data = pd.read_csv(csv_path)
+    if col:
+        data.drop(data.columns[[x for x in range(col)]], axis=1, inplace=True)
     book = xlwt.Workbook(encoding='utf-8', style_compression=0)
 
     # 创建sheet对象
@@ -44,15 +48,36 @@ def csv2excel(csv_path, excel_path):
 
     # 列表名
     columns = data.columns[:]
-    for i in range(columns):
-        sheet.wirte(0, i, columns[i])
+    for i in range(len(columns)):
+        sheet.write(0, i, columns[i])
 
     # 填入数据
     for i in range(data.shape[0]):
         for j in range(len(columns)):
-            sheet.wirte(i+1, j, str(data.iloc[i, j+1]))
+            sheet.write(i+1, j, str(data.iloc[i, j]))
 
     book.save(excel_path)
+
+
+def excel2csv(excel_path, csv_path):
+    """
+    将excel数据保存到csv文件中
+    :param excel_path: excel路径
+    :param csv_path: csv路径
+    :return:
+    """
+    data = xlrd.open_workbook(excel_path)
+    table = data.sheets()[0]
+    nrows = table.nrows
+    ncols = table.ncols
+
+    columns = table.row_values(0)
+    dt = pd.DataFrame(columns=columns)
+
+    for i in range(nrows-1):
+        dt.loc[i, :] = table.row_values(i+1)
+
+    dt.to_csv(csv_path)
 
 
 def _transform_long(long, lat):
