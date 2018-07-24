@@ -43,7 +43,7 @@ def test_bus_route():
     print(zjg, '到', yq, '的出行距离', distance, '米， 需要', duration, '秒')
     print(paths)
 
-    add_bus_paths(paths, title='公交车路径')
+    add_bus_paths(paths, title='公交车路径', scale=2)
 
 
 def test_add_points():
@@ -112,10 +112,10 @@ def test_add_area_points():
 
 
 if __name__ == '__main__':
-    #test_get_static_map()
-    #test_walk_route()
+    test_get_static_map()
+    test_walk_route()
     test_bus_route()
-    #test_add_points()
-    #test_heatmap()
-    #test_create_gif()
+    test_add_points()
+    test_heatmap()
+    test_create_gif()
     test_add_area_points()

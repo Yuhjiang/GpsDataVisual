@@ -168,7 +168,9 @@ def add_bus_paths(paths, size=(500, 500), scale=1, key=my_key, title=None):
     str_path = '|'.join(str_paths)
 
     size = str(size[0]) + '*' + str(size[1])
-    url = 'http://restapi.amap.com/v3/staticmap?size={}&paths={}&key={}'.format(size, str_path, key)
+    url = 'http://restapi.amap.com/v3/staticmap?size={}&paths={}&key={}&scale={}'.format(
+        size, str_path, key, scale
+    )
     image = get_map(url)
     plt.figure(dpi=300)
     plt.imshow(image)
@@ -211,11 +213,11 @@ def get_walk_route(origin, destination, key=my_key):
     return int(distance), int(duration), polylines
 
 
-def get_bus_route(origin, desination, city='hangzhou', key=my_key):
+def get_bus_route(origin, destination, city='hangzhou', key=my_key):
     """
     获取公交车路径
     :param origin: 出发点
-    :param desination: 到达点
+    :param destination: 到达点
     :param city: 城市
     :param key: API
     :return: 距离，时间，路径
@@ -224,7 +226,7 @@ def get_bus_route(origin, desination, city='hangzhou', key=my_key):
     modes = list()
     gps = list()
     url = 'http://restapi.amap.com/v3/direction/transit/integrated?origin={}&destination={}&' \
-          'city={}&key={}&strategy=5'.format(origin, desination, city, key)
+          'city={}&key={}&strategy=5'.format(origin, destination, city, key)
     html = requests.get(url, headers=headers)
     text = json.loads(html.text)
     count = text['count']
