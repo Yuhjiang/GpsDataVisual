@@ -347,8 +347,8 @@ def add_area_points(data, zoom, area, title=None):
 
     ax = Map.show_mpl(figsize=(8, 8))
     # cm = plt.cm.get_cmap('RdYlBu')
-    ax = plt.scatter(x, y, c=count, s=shape, cmap='Reds', alpha=0.5)
-    plt.colorbar(ax)
+    ax = plt.scatter(x, y, c=count, s=shape, alpha=0.5, orientation=0)
+    # plt.colorbar(ax)
 
     if title:
         plt.title(title)

@@ -15,7 +15,7 @@ import smopy
 from scipy import ndimage
 from datetime import datetime
 
-file_path = r'D:\Zhejiang University\Graduate Project\TransMode\Data\s_data.csv'
+file_path = r'D:\Programing\Python\GpsDataVisual\trip.csv'
 data = pd.read_csv(file_path).iloc[:, 1:]
 
 zjg_area = {

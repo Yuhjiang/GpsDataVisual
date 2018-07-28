@@ -265,3 +265,77 @@ def str2float(data):
         latitude.append(lat)
 
     return np.array(longitude), np.array(latitude)
+
+
+def get_trip_id(user_id, num):
+    num = str(num)
+    return user_id + '0' * (4 - len(num)) + num
+
+
+def get_position(pos, source):
+    pattern = re.compile(r'.*?\[ (\d+\.\d+), (\d+\.\d+) \]')
+    # GPS经纬度
+    gps_data = pattern.findall(pos)
+    if gps_data == []:       # 无有效GPS数据
+        gps = ('0', '0')
+    else:
+        if source == 'Android':
+            gps = gps_data[0]
+        else:
+            gps = (gps_data[0][1], gps_data[0][0])
+
+    # 名义信息
+    if 'describe: ' in pos:
+        actual_pos = pos.split("describe: '")[1].split("' }")[0]
+    else:
+        actual_pos = ''
+
+    return gps, actual_pos
+
+
+def get_duration(time):
+    """
+    获取持续时间，单位为s
+    :param time: 字符串格式的持续时间，例如'1:0:0'
+    :return:
+    """
+    hour, minute, second = time.split(':')
+    hour = int(hour)
+    minute = int(minute)
+    second = int(second)
+    total_seconds = hour * 60 * 60 + minute * 60 + second
+    return total_seconds
+
+
+def delete_user(users, not_wanted):
+    """
+    剔除不要的用户
+    :param users: 原始用户
+    :param not_wanted: 不需要的名单
+    :return:
+    """
+    for user in not_wanted:
+        users.remove(user)
+
+    return users
+
+
+def correct_time_for_ios(time):
+    """
+    修正iOS时间问题
+    :param time: iOS时间
+    :return:
+    """
+    hour, minute = time.split(':')
+    hour = int(hour)
+    minute = int(minute)
+
+    if minute < 52:
+        hour -= 1
+        minute += 60
+    if hour < 7:
+        hour += 24
+
+    new_hour = hour - 7
+    new_minute = minute - 52
+    return str(new_hour) + ':' + str(new_minute)

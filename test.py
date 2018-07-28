@@ -107,7 +107,7 @@ def test_add_area_points():
     data['longitude'] = [120.086705, 120.086169, 120.081937, 120.084436, 120.082232]
     data['latitude'] = [30.30844, 30.309612, 30.309334, 30.309408, 30.307778]
     data['count'] = [20, 16, 20, 10, 5]
-    data['shape'] = [80, 80, 120, 100, 110]
+    data['radius'] = [80, 80, 120, 100, 110]
     add_area_points(data, zoom=15, area=area)
 
 
